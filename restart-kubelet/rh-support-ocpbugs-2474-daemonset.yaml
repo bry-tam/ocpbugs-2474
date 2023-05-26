@@ -43,7 +43,8 @@ spec:
               mountPath: /scripts
             - name: host
               mountPath: /host
-          image: registry.redhat.io/rhel8/support-tools:latest
+          image: registry.redhat.io/openshift4/ose-cli:latest
+      hostNetwork: true
       volumes:
         - name: entrypoint-scripts
           configMap:
@@ -52,7 +53,7 @@ spec:
           hostPath:
             path: /
             type: Directory
-      dnsPolicy: ClusterFirst
+      dnsPolicy: ClusterFirstWithHostNet
       tolerations:
         - operator: Exists
       priorityClassName: system-node-critical

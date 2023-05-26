@@ -1,7 +1,14 @@
 apiVersion: v1
 data:
   entrypoint.sh: |
+    #!/bin/bash -x
+    while true; do
+            bash -x /scripts/cleanup.sh
+            sleep 300
+    done
+  cleanup.sh: |
     #!/usr/bin/env bash
+
     #
     
     function log {
@@ -59,6 +66,10 @@ data:
     }
        
     ######
+    # login to oc
+    api_token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+    oc login --token ${api_token} --certificate-authority "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt" ${KUBERNETES_SERVICE_HOST}:443
+
     current_node_name=$(get_current_node_name)
     degraded_co=$(get_degraded_co_name)
     if [ -n "${degraded_co}" ]; then
