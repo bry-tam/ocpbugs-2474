@@ -23,7 +23,7 @@ data:
       for CO in etcd kube-apiserver kube-controller-manager kube-scheduler
       do 
         yell "Checking Cluster Operator $CO"; 
-        omc get co $CO -o yaml|grep MissingStaticPodControllerDegraded >&2
+        oc get co $CO -o yaml|grep MissingStaticPodControllerDegraded >&2
         if [ $? -eq 0 ];
         then
             echo ${CO}
@@ -34,13 +34,13 @@ data:
     }
 
     function check_co_health {
-      local degraded_co=$(omc get co -o json | jq -r '.items[] | select((.status.conditions[] | select(.type == "Degraded")).status == "True") | .metadata.name'|wc -l)
+      local degraded_co=$(oc get co -o json | jq -r '.items[] | select((.status.conditions[] | select(.type == "Degraded")).status == "True") | .metadata.name'|wc -l)
       return ${degraded_co}
     } 
 
     function get_degraded_co_node_name {
       local co_name="$1"
-      local degraded_message=$(omc get co ${co_name} -o json | jq -r '.status.conditions[] | select(.type == "Degraded" and .status == "True") | .message')
+      local degraded_message=$(oc get co ${co_name} -o json | jq -r '.status.conditions[] | select(.type == "Degraded" and .status == "True") | .message')
       local node_name=$(echo $degraded_message | awk -F 'node: ' '{print $2}' | awk -F ' ' '{print $1}' | xargs)
       echo $node_name
       return 0
