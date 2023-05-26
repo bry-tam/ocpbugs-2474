@@ -1,0 +1,64 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: rh-support-ocpbugs-2474
+  namespace: rh-support-ocpbugs-2474
+  labels:
+    app: rh-support-ocpbugs-2474
+spec:
+  selector:
+    matchLabels:
+      app: rh-support-ocpbugs-2474
+  template:
+    metadata:
+      name: rh-support-ocpbugs-2474
+      labels:
+        app: rh-support-ocpbugs-2474
+      annotations:
+        openshift.io/scc: node-exporter
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ''
+      restartPolicy: Always
+      containers:
+        - resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          name: rh-support-ocpbugs-2474
+          env:
+            - name: NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          command:
+            - bash
+            - /scripts/entrypoint.sh
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: entrypoint-scripts
+              mountPath: /scripts
+            - name: host
+              mountPath: /host
+          image:registry.redhat.io/rhel8/support-tools:latest
+      volumes:
+        - name: entrypoint-scripts
+          configMap:
+            name: rh-support-scripts
+        - name: host
+          hostPath:
+            path: /
+            type: Directory
+      dnsPolicy: ClusterFirst
+      tolerations:
+        - operator: Exists
+      priorityClassName: system-node-critical
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 3
+      maxSurge: 0
+  revisionHistoryLimit: 2

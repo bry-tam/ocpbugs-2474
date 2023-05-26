@@ -1,0 +1,92 @@
+apiVersion: v1
+data:
+  entrypoint.sh: |
+    #!/usr/bin/env bash
+    #
+    
+    function log {
+      echo "$(TZ=Z date +%FT%TZ) $0: $*"
+    }
+    
+    function yell {
+      echo "$(TZ=Z date +%FT%TZ) $0: $*" >&2
+    }
+    
+    function get_current_node_name {
+      echo "$NODENAME"
+    }
+
+    ## This logic can be improved, but for now we will keep running this script, and applying the workaround in a sequencial way if required.
+    #### It will apply the workaround for the first failed CO that we found in a strict list 
+    ### repeating another loop here, sorry about that :/ 
+    function get_degraded_co_name {
+      for CO in etcd kube-apiserver kube-controller-manager kube-scheduler
+      do 
+        yell "Checking Cluster Operator $CO"; 
+        omc get co $CO -o yaml|grep MissingStaticPodControllerDegraded >&2
+        if [ $? -eq 0 ];
+        then
+            echo ${CO}
+            return 0
+        fi
+      done
+      echo ""
+    }
+
+    function check_co_health {
+      local degraded_co=$(omc get co -o json | jq -r '.items[] | select((.status.conditions[] | select(.type == "Degraded")).status == "True") | .metadata.name'|wc -l)
+      return ${degraded_co}
+    } 
+
+    function get_degraded_co_node_name {
+      local co_name="$1"
+      local degraded_message=$(omc get co ${co_name} -o json | jq -r '.status.conditions[] | select(.type == "Degraded" and .status == "True") | .message')
+      local node_name=$(echo $degraded_message | awk -F 'node: ' '{print $2}' | awk -F ' ' '{print $1}' | xargs)
+      echo $node_name
+      return 0
+    }
+
+    # restart kubelet in the affected node
+    function restart_kubelet {
+      local degraded_node_name="$1"
+      local current_node_name=$(get_current_node_name)
+
+      # verify we are on the degraded node before restarting kubelet
+      if [[ "${degraded_node_name}" == "${current_node_name}" ]]; then
+        yell restart kubelet node ${degraded_node_name}
+        chroot /host sudo systemctl restart kubelet
+      fi
+    }
+       
+    ######
+    current_node_name=$(get_current_node_name)
+    degraded_co=$(get_degraded_co_name)
+    if [ -n "${degraded_co}" ]; then
+      yell Found ClusterOperator ${degraded_co} degraded by kubelet
+
+      degraded_node_name=$(get_degraded_co_node_name "${degraded_co}")
+      yell ${degraded_co} degraded on node ${degraded_node_name}
+
+      # check if the degraded operator is running on the same node as we are
+      if [[ "${current_node_name}" == "${degraded_node_name}" ]]; then
+        restart_kubelet "${degraded_node_name}"
+        yell "Sleeping 2 minutes then rechecking health"
+        sleep 120 
+        $(check_co_health)
+        if [ $? -eq 0 ]; then
+            yell Cluster healthy
+            exit 0
+        else
+            yell Cluster still not healthy
+            exit 1
+        fi 
+      else
+        yell "Skipping ${degraded_co} degraded on node ${degraded_node_name} - not node ${current_node_name}"
+      fi
+    fi
+    ######
+
+kind: ConfigMap
+metadata:
+  name: rh-support-scripts
+  namespace: rh-support-ocpbugs-2474

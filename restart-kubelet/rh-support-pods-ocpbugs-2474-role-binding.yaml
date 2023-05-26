@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rh-support-pods-ocpbugs-2474
+  namespace: rh-support-ocpbugs-2474
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: rh-support-ocpbugs-2474
+roleRef:
+  kind: ClusterRole
+  name: rh-support-pods-ocpbugs-2474
+  apiGroup: rbac.authorization.k8s.io

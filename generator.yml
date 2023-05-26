@@ -1,0 +1,24 @@
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PolicyGenerator
+metadata:
+  name: gen-policy-generator
+policyDefaults:
+  namespace: bry-tam-policies
+  remediationAction: enforce
+  policySets:
+    - ocpbugs
+placementBindingDefaults:
+  name: "ocpbugs-binding"
+
+policies:
+  - name: ocpbugs-2474-workaround
+    configurationPolicyAnnotations:
+      policy.open-cluster-management.io/disable-templates: "true"
+    manifests:
+      - path: restart-kubelet
+
+policySets:
+  - name: ocpbugs
+    placement:
+      placementRuleName: "all-openshift"

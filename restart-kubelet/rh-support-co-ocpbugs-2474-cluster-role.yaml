@@ -1,0 +1,8 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rh-support-co-ocpbugs-2474
+rules:
+- apiGroups: ["config.openshift.io"]
+  resources: ["clusteroperators"]
+  verbs: ["get", "list", "watch"]
