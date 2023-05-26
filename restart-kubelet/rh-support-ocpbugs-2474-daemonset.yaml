@@ -25,6 +25,10 @@ spec:
             requests:
               cpu: 100m
               memory: 100Mi
+           stdin: true
+          terminationMessagePath: /dev/termination-log
+          stdinOnce: true
+          tty: true
           name: rh-support-ocpbugs-2474
           env:
             - name: NODENAME
@@ -45,6 +49,7 @@ spec:
               mountPath: /host
           image: registry.redhat.io/openshift4/ose-cli:latest
       hostNetwork: true
+      enableServiceLinks: true
       volumes:
         - name: entrypoint-scripts
           configMap:
