@@ -43,7 +43,7 @@ spec:
               mountPath: /scripts
             - name: host
               mountPath: /host
-          image:registry.redhat.io/rhel8/support-tools:latest
+          image: registry.redhat.io/rhel8/support-tools:latest
       volumes:
         - name: entrypoint-scripts
           configMap:
