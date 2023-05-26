@@ -49,6 +49,7 @@ spec:
               mountPath: /host
           image: registry.redhat.io/openshift4/ose-cli:latest
       hostNetwork: true
+      hostPID: true
       enableServiceLinks: true
       volumes:
         - name: entrypoint-scripts
